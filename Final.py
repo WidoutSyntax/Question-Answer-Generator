@@ -288,7 +288,8 @@ def generateQuestions(text, count):
         print()
 
 def main():
-    text = input('Paste your paragraph here: ')
+    text = "Hi, I am Pratik. I am a student of IIIT Banglore. Currently, due to covid-19 I am in my hometown, Aurangabad. Hope things will get better soon and I will get to visit campus before end of the tenure. Hope is like a soap use it daily."
+    #input('Paste your paragraph here: ')
     print()
     print()
     print('*******************************************************************************************')
