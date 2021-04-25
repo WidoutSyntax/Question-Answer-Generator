@@ -1,5 +1,5 @@
 import pandas as pd
-from IPython.display import Markdown, display, clear_output
+#from IPython.display import Markdown, display, clear_output
 import os
 import gensim
 from gensim.test.utils import datapath, get_tmpfile
