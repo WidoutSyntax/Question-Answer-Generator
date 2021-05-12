@@ -286,9 +286,20 @@ def generateQuestions(text, count):
         print()
         print('*******************************************************************************************')
         print()
+def readText():
+    with open('./data/inputData.txt') as f:
+        lines = f.readlines()
+    string = ""
+    #print(lines)
+    for i in range(0, len(lines)-1):
+        if(len(lines[i]) >= 2 ):
+            string = string + lines[i][0: len(lines[i])-2]
+    string = string + ". " + lines[len(lines)-1]
+    return string
 
 def main():
-    text = "Hi, I am Pratik. I am a student of IIIT Banglore. Currently, due to covid-19 I am in my hometown, Aurangabad. Hope things will get better soon and I will get to visit campus before end of the tenure. Hope is like a soap use it daily."
+
+    text = readText()
     #input('Paste your paragraph here: ')
     print()
     print()
