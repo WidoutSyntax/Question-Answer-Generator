@@ -1,5 +1,5 @@
 FROM python:3
-COPY /var/lib/jenkins/workspace/Question-Answer-Generator ./
+COPY ./ ./
 WORKDIR ./
 RUN pip install --no-cache-dir -r requirements.txt
 CMD ["python", "Final.py"]
