@@ -7,6 +7,7 @@ from gensim.models import KeyedVectors
 import _pickle as cPickle
 from pathlib import Path
 import spacy
+import logging
 from spacy import displacy
 nlp = spacy.load('en_core_web_sm')
 
@@ -15,19 +16,19 @@ def dumpPickle(fileName, content):
     cPickle.dump(content, pickleFile, -1)
     pickleFile.close()
 
-def loadPickle(fileName):    
+def loadPickle(fileName):
     file = open(fileName, 'rb')
     content = cPickle.load(file)
     file.close()
-    
+
     return content
-    
+
 def pickleExists(fileName):
     file = Path(fileName)
-    
+
     if file.is_file():
         return True
-    
+
     return False
 
 def extractAnswers(qas, doc):
@@ -47,7 +48,7 @@ def extractAnswers(qas, doc):
 
         senStart += senLen
         senId += 1
-    
+
     return answers
 
 def tokenIsAnswer(token, sentenceId, answers):
@@ -62,30 +63,30 @@ def getNEStartIndexs(doc):
     neStarts = {}
     for ne in doc.ents:
         neStarts[ne.start] = ne
-        
-    return neStarts 
+
+    return neStarts
 
 def getSentenceStartIndexes(doc):
     senStarts = []
-    
+
     for sentence in doc.sents:
         senStarts.append(sentence[0].i)
-    
+
     return senStarts
-    
+
 def getSentenceForWordPosition(wordPos, senStarts):
     for i in range(1, len(senStarts)):
         if (wordPos < senStarts[i]):
             return i - 1
-        
+
 def addWordsForParagrapgh(newWords, text):
     doc = nlp(text)
 
     neStarts = getNEStartIndexs(doc)
     senStarts = getSentenceStartIndexes(doc)
-    
+
     i = 0
-    
+
     while (i < len(doc)):
         #If the token is a start of a Named Entity, add it and push to index to end of the NE
         if (i in neStarts):
@@ -137,7 +138,7 @@ def oneHotEncodeColumns(df):
 
         df = df.drop(column, axis = 1)
         df = df.join(one_hot)
-    
+
     return df
 
 
@@ -147,7 +148,7 @@ def generateDf(text):
 
     wordColums = ['text', 'titleId', 'paragrapghId', 'sentenceId','wordCount', 'NER', 'POS', 'TAG', 'DEP','shape']
     df = pd.DataFrame(words, columns=wordColums)
-    
+
     return df
 
 
@@ -160,8 +161,8 @@ def prepareDf(df):
 
     for feature in featureNames:
         if feature not in wordsDf.columns:
-            wordsDf[feature] = 0    
-                
+            wordsDf[feature] = 0
+
     columnsToDrop = ['text', 'titleId', 'paragrapghId', 'sentenceId', 'shape', 'isAnswer']
     wordsDf = wordsDf.drop(columnsToDrop, axis = 1)
 
@@ -169,16 +170,16 @@ def prepareDf(df):
     return wordsDf
 
 def predictWords(wordsDf, df):
-    
+
     predictorPickleName = 'data/pickles/nb-predictor.pkl'
     predictor = loadPickle(predictorPickleName)
-    
+
     y_pred = predictor.predict_proba(wordsDf)
 
     labeledAnswers = []
     for i in range(len(y_pred)):
         labeledAnswers.append({'word': df.iloc[i]['text'], 'prob': y_pred[i][0]})
-    
+
     return labeledAnswers
 
 def blankAnswer(firstTokenIndex, lastTokenIndex, sentStart, sentEnd, doc):
@@ -186,9 +187,9 @@ def blankAnswer(firstTokenIndex, lastTokenIndex, sentStart, sentEnd, doc):
     leftPartEnd = doc[firstTokenIndex].idx
     rightPartStart = doc[lastTokenIndex].idx + len(doc[lastTokenIndex])
     rightPartEnd = doc[sentEnd - 1].idx + len(doc[sentEnd - 1])
-    
+
     question = doc.text[leftPartStart:leftPartEnd] + '_____' + doc.text[rightPartStart:rightPartEnd]
-    
+
     return question
 
 def addQuestions(answers, text):
@@ -199,33 +200,33 @@ def addQuestions(answers, text):
     #Check wheter each token is the next answer
     for sent in doc.sents:
         for token in sent:
-            
+
             #If all the answers have been found, stop looking
             if currAnswerIndex >= len(answers):
                 break
-            
+
             #In the case where the answer is consisted of more than one token, check the following tokens as well.
             answerDoc = nlp(answers[currAnswerIndex]['word'])
             answerIsFound = True
-            
+
             for j in range(len(answerDoc)):
                 if token.i + j >= len(doc) or doc[token.i + j].text != answerDoc[j].text:
                     answerIsFound = False
-           
-            #If the current token is corresponding with the answer, add it 
+
+            #If the current token is corresponding with the answer, add it
             if answerIsFound:
                 question = blankAnswer(token.i, token.i + len(answerDoc) - 1, sent.start, sent.end, doc)
-                
+
                 qaPair.append({'question' : question, 'answer': answers[currAnswerIndex]['word'], 'prob': answers[currAnswerIndex]['prob']})
-                
+
                 currAnswerIndex += 1
-                
+
     return qaPair
 
 def sortAnswers(qaPairs):
     orderedQaPairs = sorted(qaPairs, key=lambda qaPair: qaPair['prob'])
-    
-    return orderedQaPairs    
+
+    return orderedQaPairs
 
 model = None
 predictorFeaturesName = './data/pickles/model.pkl'
@@ -233,8 +234,8 @@ model = loadPickle(predictorFeaturesName)
 
 def generate_distractors(answer, count):
     answer = str.lower(answer)
-    
-    ##Extracting closest words for the answer. 
+
+    ##Extracting closest words for the answer.
     try:
         closestWords = model.most_similar(positive=[answer], topn=count)
     except:
@@ -243,25 +244,25 @@ def generate_distractors(answer, count):
 
     #Return count many distractors
     distractors = list(map(lambda x: x[0], closestWords))[0:count]
-    
+
     return distractors
 
 def addDistractors(qaPairs, count):
     if not model:
         print("Glove embeddings not found. Please download and place them in the following path: " + glove_file)
-    
+
     for qaPair in qaPairs:
         distractors = generate_distractors(qaPair['answer'], count)
         qaPair['distractors'] = distractors
-    
+
     return qaPairs
 
 def generateQuestions(text, count):
-    
-    # Extract words 
+
+    # Extract words
     df = generateDf(text)
     wordsDf = prepareDf(df)
-    # Predict 
+    # Predict
     labeledAnswers = predictWords(wordsDf, df)
     # Transform questions
     qaPairs = addQuestions(labeledAnswers, text)
@@ -286,15 +287,28 @@ def generateQuestions(text, count):
         print()
         print('*******************************************************************************************')
         print()
+def readText():
+    with open('./data/inputData.txt') as f:
+        lines = f.readlines()
+    string = ""
+    #print(lines)
+    for i in range(0, len(lines)-1):
+        if(len(lines[i]) >= 2 ):
+            string = string + lines[i][0: len(lines[i])-2]
+    string = string + ". " + lines[len(lines)-1]
+    return string
 
 def main():
-    #text = "Hi, I am Pratik. I am a student of IIIT Banglore. Currently, due to covid-19 I am in my hometown, Aurangabad. Hope things will get better soon and I will get to visit campus before end of the tenure. Hope is like a soap use it daily."
+  
+    logging.basicConfig(filename='app.log', filemode='a', format='[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s', level=logging.INFO)
+    count = int(input('Enter number of questions you want to create: '))
+    logging.info(count)
     text = input('Paste your paragraph here: ')
     print()
     print()
     print('*******************************************************************************************')
-    generateQuestions(text, 4)
-    
+    generateQuestions(text, count)
+
 
 if __name__=="__main__":
     main()
