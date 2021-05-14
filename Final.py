@@ -299,12 +299,11 @@ def readText():
     return string
 
 def main():
-	
-    text = readText()
-    
-	logging.basicConfig(filename='app.log', filemode='a', format='[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s', level=logging.INFO)
-	count = int(input('Enter number of questions you want to create: '))
-	logging.info(count)
+  
+    logging.basicConfig(filename='app.log', filemode='a', format='[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s', level=logging.INFO)
+    count = int(input('Enter number of questions you want to create: '))
+    logging.info(count)
+    text = input('Paste your paragraph here: ')
     print()
     print()
     print('*******************************************************************************************')
