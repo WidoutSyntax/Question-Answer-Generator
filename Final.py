@@ -8,6 +8,7 @@ import _pickle as cPickle
 from pathlib import Path
 import spacy
 import logging
+import random
 from spacy import displacy
 nlp = spacy.load('en_core_web_sm')
 
@@ -269,24 +270,31 @@ def generateQuestions(text, count):
     # Pick the best questions
     orderedQaPairs = sortAnswers(qaPairs)
     # Generate distractors
-    questions = addDistractors(orderedQaPairs[:count], 4)
+    questions = addDistractors(orderedQaPairs[:count], 3)
     # Print
     for i in range(count):
-        #display(Markdown('### Question ' + str(i + 1) + ':'))
-        print('--Question: ')
+        print('Question', i+1, ': ', sep = '')
         print(questions[i]['question'])
         print()
-        #display(Markdown('#### Answer:'))
-        print('--Answer: ')
-        print(questions[i]['answer'])
+        
+        print('Answer: ', questions[i]['answer'])
         print()
-        #display(Markdown('#### Incorrect answers:'))
-        print('--Incorrect answers: ')
+        
+        incorrectAns = []
+        incorrectAns.append(questions[i]['answer'])
         for distractor in questions[i]['distractors']:
-            print(distractor)
+            incorrectAns.append(distractor)
+        random.shuffle(incorrectAns)
+        
+        print('Options: ')
+        cnt = 1
+        for inAns in incorrectAns:
+            print(cnt, '.', inAns, sep = '')
+            cnt = cnt + 1
         print()
         print('*******************************************************************************************')
         print()
+        
 def readText():
     with open('./data/inputData.txt') as f:
         lines = f.readlines()
