@@ -1,0 +1,7 @@
+DevOps for Question, Answer and Options Generation from text data
+• Project aims at generating questions, it’s exact answer and creating options which are similar
+to answer of question from text paragraph.
+• Flow- Identify keywords, Replace the answer, Generate options using wordToVec GloVe
+• Tools used : Jenkins as CI/CD pipeline, Docker, Dockerhub, Rundeck for deployment, ELK stack
+for monitoring
+• Model used: Naive Bayes classifier
